@@ -1,0 +1,99 @@
+version: "3.7"
+
+services:
+  app_proxy:
+    environment:
+      APP_HOST: audiotools-removedor-de-voz_nginx_1
+      APP_PORT: 80
+
+  redis:
+    image: redis:6.0-buster
+    hostname: redis
+    volumes:
+      - ${APP_DATA_DIR}/data/redis:/data
+    restart: on-failure
+
+  nginx:
+    image: jeffreyca/spleeter-web-nginx:latest
+    environment:
+      API_HOST: api
+      CERTBOT_CERT_NAME: spleeter-web
+      CERTBOT_DOMAIN: .
+      CERTBOT_EMAIL: .
+      UPLOAD_FILE_SIZE_LIMIT: "500"
+    volumes:
+      - ${APP_DATA_DIR}/data/staticfiles:/webapp/staticfiles
+    depends_on:
+      - api
+    restart: on-failure
+    stop_grace_period: 30s
+
+  api:
+    image: jeffreyca/spleeter-web-backend:latest
+    volumes:
+      - ${APP_DATA_DIR}/data/assets:/webapp/frontend/assets
+      - ${APP_DATA_DIR}/data/sqlite:/webapp/sqlite
+      - ${APP_DATA_DIR}/data/staticfiles:/webapp/staticfiles
+      - ${APP_DATA_DIR}/data/media:/webapp/media
+    environment:
+      TF_CPP_MIN_LOG_LEVEL: "2"
+      DJANGO_SETTINGS_MODULE: django_react.settings_docker
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      CPU_SEPARATION: "1"
+      ALLOW_ALL_HOSTS: "1"
+      UPLOAD_FILE_SIZE_LIMIT: "500"
+    depends_on:
+      - redis
+      - frontend
+    restart: on-failure
+    stop_grace_period: 1m
+
+  celery-fast:
+    image: jeffreyca/spleeter-web-backend:latest
+    entrypoint: ./celery-fast-entrypoint.sh
+    volumes:
+      - ${APP_DATA_DIR}/data/celery:/webapp/celery
+      - ${APP_DATA_DIR}/data/models:/webapp/pretrained_models
+      - ${APP_DATA_DIR}/data/sqlite:/webapp/sqlite
+      - ${APP_DATA_DIR}/data/media:/webapp/media
+    environment:
+      TF_CPP_MIN_LOG_LEVEL: "2"
+      DJANGO_SETTINGS_MODULE: django_react.settings_docker
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      CPU_SEPARATION: "1"
+      CELERY_FAST_QUEUE_CONCURRENCY: "1"
+      CELERY_SLOW_QUEUE_CONCURRENCY: "1"
+    depends_on:
+      - redis
+    restart: on-failure
+    stop_grace_period: 1m
+
+  celery-slow:
+    image: jeffreyca/spleeter-web-backend:latest
+    entrypoint: ./celery-slow-entrypoint.sh
+    volumes:
+      - ${APP_DATA_DIR}/data/celery:/webapp/celery
+      - ${APP_DATA_DIR}/data/models:/webapp/pretrained_models
+      - ${APP_DATA_DIR}/data/sqlite:/webapp/sqlite
+      - ${APP_DATA_DIR}/data/media:/webapp/media
+    environment:
+      TF_CPP_MIN_LOG_LEVEL: "2"
+      DJANGO_SETTINGS_MODULE: django_react.settings_docker
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      CPU_SEPARATION: "1"
+      CELERY_FAST_QUEUE_CONCURRENCY: "1"
+      CELERY_SLOW_QUEUE_CONCURRENCY: "1"
+    depends_on:
+      - redis
+    restart: on-failure
+    stop_grace_period: 1m
+
+  frontend:
+    image: jeffreyca/spleeter-web-frontend:latest
+    volumes:
+      - ${APP_DATA_DIR}/data/assets:/webapp/frontend/assets
+    restart: on-failure
+    stop_grace_period: 30s
