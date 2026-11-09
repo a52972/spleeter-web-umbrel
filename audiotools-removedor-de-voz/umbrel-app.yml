@@ -4,8 +4,8 @@ name: Removedor de Voz
 tagline: Separa voz e instrumentos das tuas músicas
 icon: https://raw.githubusercontent.com/a52972/spleeter-web-umbrel/main/audiotools-removedor-de-voz/icon.svg
 category: Media
-version: "1.0.0"
-port: 80
+version: "1.0.1"
+port: 8765
 description: >-
   Interface web local para separar faixas de áudio em voz, bateria, baixo e
   instrumentos. Usa o Spleeter Web e suporta modelos de separação como Spleeter
@@ -19,7 +19,7 @@ repo: https://github.com/a52972/spleeter-web-umbrel
 support: https://github.com/a52972/spleeter-web-umbrel/issues
 gallery: []
 releaseNotes: >-
-  Primeira versão comunitária para umbrelOS.
+  Corrige a porta de acesso no umbrelOS; a interface continua servida internamente pelo nginx na porta 80.
 dependencies: []
 path: ""
 defaultUsername: ""
